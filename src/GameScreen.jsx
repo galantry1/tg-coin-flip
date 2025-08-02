@@ -27,14 +27,16 @@ export default function GameScreen({ onBack, balance, setBalance }) {
   const [userChoice, setUserChoice] = useState(null);
   const [opponentChoice, setOpponentChoice] = useState(null);
   const [result, setResult] = useState("");
+  const [hasBetApplied, setHasBetApplied] = useState(false);
 
-  // Обновляем баланс когда начинается игра (списываем ставку)
+  // Списываем ставку только один раз
   useEffect(() => {
-    if (step === 1 && selectedBet) {
-      setBalance(prev => prev - selectedBet);
+    if (step === 1 && selectedBet && !hasBetApplied) {
+      setBalance((prev) => prev - selectedBet);
+      setHasBetApplied(true);
     }
     // eslint-disable-next-line
-  }, [step, selectedBet]);
+  }, [step, selectedBet, hasBetApplied]);
 
   // Таймер
   useEffect(() => {
@@ -59,7 +61,7 @@ export default function GameScreen({ onBack, balance, setBalance }) {
         setResult(res);
 
         // Обновим баланс по результату
-        setBalance(prev => {
+        setBalance((prev) => {
           if (res.includes("выиграл")) return prev + selectedBet * 2;
           if (res.includes("Ничья")) return prev + selectedBet;
           return prev;
@@ -70,12 +72,23 @@ export default function GameScreen({ onBack, balance, setBalance }) {
     }
   }, [userChoice, step, selectedBet, setBalance]);
 
+  // Новый способ — сбрасываем все состояния, включая hasBetApplied
+  function resetGame() {
+    setStep(0);
+    setSelectedBet(null);
+    setTimer(10);
+    setUserChoice(null);
+    setOpponentChoice(null);
+    setResult("");
+    setHasBetApplied(false);
+  }
+
   if (!selectedBet) {
     return (
       <div className="game-screen centered-screen">
         <div className="game-title big-title">Выбери ставку</div>
         <div className="bets-grid">
-          {bets.map(bet => (
+          {bets.map((bet) => (
             <button
               key={bet}
               className="bet-btn big-bet-btn"
@@ -92,7 +105,7 @@ export default function GameScreen({ onBack, balance, setBalance }) {
             </button>
           ))}
         </div>
-        <button className="back-btn" onClick={onBack}>
+        <button className="back-btn" onClick={() => { resetGame(); onBack(); }}>
           Назад
         </button>
       </div>
@@ -104,7 +117,7 @@ export default function GameScreen({ onBack, balance, setBalance }) {
       <div className="game-screen centered-screen">
         <div className="game-title">Твой выбор (осталось {timer} сек):</div>
         <div className="choices-list">
-          {choices.map(choice => (
+          {choices.map((choice) => (
             <button
               key={choice}
               className="choice-btn"
@@ -115,7 +128,9 @@ export default function GameScreen({ onBack, balance, setBalance }) {
             </button>
           ))}
         </div>
-        <button className="back-btn" onClick={onBack}>Назад</button>
+        <button className="back-btn" onClick={() => { resetGame(); onBack(); }}>
+          Назад
+        </button>
       </div>
     );
   }
@@ -140,7 +155,9 @@ export default function GameScreen({ onBack, balance, setBalance }) {
             </div>
           </div>
         )}
-        <button className="back-btn" onClick={onBack}>Назад в меню</button>
+        <button className="back-btn" onClick={() => { resetGame(); onBack(); }}>
+          Назад в меню
+        </button>
       </div>
     );
   }
