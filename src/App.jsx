@@ -3,63 +3,88 @@ import MenuScreen from "./MenuScreen";
 import ProfileScreen from "./ProfileScreen";
 import GameScreen from "./GameScreen";
 import BottomNav from "./BottomNav";
+import { fetchBalance, updateBalance } from "./api";
 
-function usePersistentState(key, initialValue) {
-  const [state, setState] = useState(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored !== null ? JSON.parse(stored) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch {}
-  }, [key, state]);
-
-  return [state, setState];
+function getTelegramUser() {
+  if (
+    window.Telegram &&
+    window.Telegram.WebApp &&
+    window.Telegram.WebApp.initDataUnsafe &&
+    window.Telegram.WebApp.initDataUnsafe.user
+  ) {
+    return window.Telegram.WebApp.initDataUnsafe.user;
+  }
+  // для локалки
+  return {
+    id: "test_user",
+    first_name: "Тестовый",
+    last_name: "Пользователь",
+    username: "testuser",
+    photo_url: "https://t.me/i/userpic/320/testuser.jpg",
+  };
 }
 
 export default function App() {
-  const [screen, setScreen] = useState("menu"); // "menu" | "profile" | "game"
-  const [balance, setBalance] = usePersistentState("coin-game-balance", 1000);
+  const [activeTab, setActiveTab] = useState("menu");
+  const [balance, setBalance] = useState(0);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Навигация
-  const goMenu = () => setScreen("menu");
-  const goProfile = () => setScreen("profile");
-  const goGame = () => setScreen("game");
+  // Получаем данные пользователя из Telegram при запуске
+  useEffect(() => {
+    setUser(getTelegramUser());
+  }, []);
+
+  // Загружаем баланс с сервера при появлении user.id
+  useEffect(() => {
+    if (user?.id) {
+      setLoading(true);
+      fetchBalance(user.id)
+        .then((data) => setBalance(data.balance))
+        .catch(() => setBalance(1000))
+        .finally(() => setLoading(false));
+    }
+  }, [user]);
+
+  // Функция для обновления баланса
+  const handleUpdateBalance = async (newBalance) => {
+    setBalance(newBalance);
+    try {
+      await updateBalance(user.id, newBalance);
+    } catch {}
+  };
+
+  if (!user?.id || loading) {
+    return <div className="centered-screen">Загрузка...</div>;
+  }
 
   return (
     <div className="app-root">
       <div className="main-content">
-        {screen === "menu" && (
+        {activeTab === "menu" && (
           <MenuScreen
-            onPlay={goGame}
             balance={balance}
+            setActiveTab={setActiveTab}
+            userId={user.id}
           />
         )}
-        {screen === "profile" && (
+        {activeTab === "profile" && (
           <ProfileScreen
             balance={balance}
-            onBack={goMenu}
+            setActiveTab={setActiveTab}
+            user={user}
           />
         )}
-        {screen === "game" && (
+        {activeTab === "game" && (
           <GameScreen
             balance={balance}
-            setBalance={setBalance}
-            onBack={goMenu}
+            setBalance={handleUpdateBalance}
+            onBack={() => setActiveTab("menu")}
+            userId={user.id}
           />
         )}
       </div>
-      <BottomNav
-        screen={screen}
-        goMenu={goMenu}
-        goProfile={goProfile}
-      />
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }

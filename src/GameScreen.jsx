@@ -4,8 +4,7 @@ const bets = [5, 10, 25, 50, 100, 500];
 const choices = ["Орел", "Решка", "Ребро"];
 
 function getRandomChoice() {
-  const idx = Math.floor(Math.random() * choices.length);
-  return choices[idx];
+  return choices[Math.floor(Math.random() * choices.length)];
 }
 
 function getResult(user, opponent) {
@@ -27,18 +26,16 @@ export default function GameScreen({ onBack, balance, setBalance }) {
   const [userChoice, setUserChoice] = useState(null);
   const [opponentChoice, setOpponentChoice] = useState(null);
   const [result, setResult] = useState("");
-  const [hasBetApplied, setHasBetApplied] = useState(false);
+  const [betApplied, setBetApplied] = useState(false);
 
-  // Списываем ставку только один раз
   useEffect(() => {
-    if (step === 1 && selectedBet && !hasBetApplied) {
-      setBalance((prev) => prev - selectedBet);
-      setHasBetApplied(true);
+    if (step === 1 && selectedBet && !betApplied) {
+      setBalance(balance - selectedBet);
+      setBetApplied(true);
     }
     // eslint-disable-next-line
-  }, [step, selectedBet, hasBetApplied]);
+  }, [step, selectedBet, betApplied]);
 
-  // Таймер
   useEffect(() => {
     if (step === 1 && timer > 0 && !userChoice) {
       const t = setTimeout(() => setTimer(timer - 1), 1000);
@@ -60,19 +57,15 @@ export default function GameScreen({ onBack, balance, setBalance }) {
         const res = getResult(userChoice, opp);
         setResult(res);
 
-        // Обновим баланс по результату
-        setBalance((prev) => {
-          if (res.includes("выиграл")) return prev + selectedBet * 2;
-          if (res.includes("Ничья")) return prev + selectedBet;
-          return prev;
-        });
+        if (res.includes("выиграл")) setBalance(balance + selectedBet * 2);
+        if (res.includes("Ничья")) setBalance(balance + selectedBet);
 
         setStep(2);
       }, 800);
     }
+    // eslint-disable-next-line
   }, [userChoice, step, selectedBet, setBalance]);
 
-  // Новый способ — сбрасываем все состояния, включая hasBetApplied
   function resetGame() {
     setStep(0);
     setSelectedBet(null);
@@ -80,7 +73,7 @@ export default function GameScreen({ onBack, balance, setBalance }) {
     setUserChoice(null);
     setOpponentChoice(null);
     setResult("");
-    setHasBetApplied(false);
+    setBetApplied(false);
   }
 
   if (!selectedBet) {

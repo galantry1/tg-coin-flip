@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function MenuScreen({ onPlay, balance }) {
+export default function MenuScreen({ balance, setActiveTab }) {
   return (
     <div className="menu-screen">
       <div className="menu-header">
@@ -8,7 +8,9 @@ export default function MenuScreen({ onPlay, balance }) {
         <span className="menu-balance">{balance} 🪙</span>
       </div>
       <div className="menu-actions">
-        <button className="main-btn" onClick={onPlay}>Играть</button>
+        <button className="main-btn" onClick={() => setActiveTab("game")}>
+          Играть
+        </button>
         <button className="secondary-btn" disabled>
           Играть с другом
         </button>

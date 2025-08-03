@@ -1,19 +1,33 @@
 import React from "react";
 
-export default function ProfileScreen({ balance }) {
-  const username = "Ваш Ник";
+export default function ProfileScreen({ balance, setActiveTab, user }) {
   return (
-    <div className="profile-screen">
+    <div>
       <div className="profile-header">
-        <div className="profile-avatar"></div>
+        <img
+          className="profile-avatar"
+          src={user.photo_url || "https://t.me/i/userpic/320/testuser.jpg"}
+          alt="avatar"
+        />
         <div>
-          <div className="profile-username">{username}</div>
+          <div className="profile-username">
+            {user.first_name} {user.last_name}
+            {user.username && (
+              <span style={{ color: "#9ca3af", fontWeight: 400, marginLeft: 7 }}>
+                @{user.username}
+              </span>
+            )}
+          </div>
           <div className="profile-balance">{balance} 🪙</div>
         </div>
       </div>
       <div className="profile-actions">
-        <button className="main-btn">Пополнение</button>
-        <button className="main-btn">Обмен</button>
+        <button className="main-btn" disabled>
+          Пополнение
+        </button>
+        <button className="secondary-btn" disabled>
+          Обмен
+        </button>
       </div>
     </div>
   );
