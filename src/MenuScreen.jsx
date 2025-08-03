@@ -1,16 +1,14 @@
 import React from "react";
 
-export default function MenuScreen({ balance, setActiveTab }) {
+export default function MenuScreen({ onPlay, onProfile, balance }) {
   return (
-    <div className="menu-screen">
+    <div>
       <div className="menu-header">
         <span className="menu-title">Главное меню</span>
         <span className="menu-balance">{balance} 🪙</span>
       </div>
       <div className="menu-actions">
-        <button className="main-btn" onClick={() => setActiveTab("game")}>
-          Играть
-        </button>
+        <button className="main-btn" onClick={onPlay}>Играть</button>
         <button className="secondary-btn" disabled>
           Играть с другом
         </button>

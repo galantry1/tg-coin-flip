@@ -1,90 +1,78 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import MenuScreen from "./MenuScreen";
 import ProfileScreen from "./ProfileScreen";
 import GameScreen from "./GameScreen";
-import BottomNav from "./BottomNav";
 import { fetchBalance, updateBalance } from "./api";
 
 function getTelegramUser() {
-  if (
-    window.Telegram &&
-    window.Telegram.WebApp &&
-    window.Telegram.WebApp.initDataUnsafe &&
-    window.Telegram.WebApp.initDataUnsafe.user
-  ) {
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
     return window.Telegram.WebApp.initDataUnsafe.user;
   }
-  // для локалки
+  // Заглушка для разработки в браузере
   return {
-    id: "test_user",
+    id: 123456,
     first_name: "Тестовый",
     last_name: "Пользователь",
     username: "testuser",
-    photo_url: "https://t.me/i/userpic/320/testuser.jpg",
+    photo_url: "https://i.ibb.co/B4WtTRb/avatar.jpg",
   };
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("menu");
-  const [balance, setBalance] = useState(0);
+  const [screen, setScreen] = useState("menu");
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState(null);
 
-  // Получаем данные пользователя из Telegram при запуске
   useEffect(() => {
-    setUser(getTelegramUser());
+    const tgUser = getTelegramUser();
+    setUser(tgUser);
+
+    // Баланс по user.id или user.id || 'user_1'
+    fetchBalance(tgUser.id || "user_1").then((data) => {
+      setBalance(data.balance);
+    });
   }, []);
 
-  // Загружаем баланс с сервера при появлении user.id
-  useEffect(() => {
-    if (user?.id) {
-      setLoading(true);
-      fetchBalance(user.id)
-        .then((data) => setBalance(data.balance))
-        .catch(() => setBalance(1000))
-        .finally(() => setLoading(false));
-    }
-  }, [user]);
-
-  // Функция для обновления баланса
-  const handleUpdateBalance = async (newBalance) => {
+  // При обновлении баланса
+  const handleBalanceChange = (newBalance) => {
     setBalance(newBalance);
-    try {
-      await updateBalance(user.id, newBalance);
-    } catch {}
+    if (user?.id) {
+      updateBalance(user.id, newBalance);
+    }
   };
-
-  if (!user?.id || loading) {
-    return <div className="centered-screen">Загрузка...</div>;
-  }
 
   return (
     <div className="app-root">
-      <div className="main-content">
-        {activeTab === "menu" && (
-          <MenuScreen
-            balance={balance}
-            setActiveTab={setActiveTab}
-            userId={user.id}
-          />
-        )}
-        {activeTab === "profile" && (
-          <ProfileScreen
-            balance={balance}
-            setActiveTab={setActiveTab}
-            user={user}
-          />
-        )}
-        {activeTab === "game" && (
-          <GameScreen
-            balance={balance}
-            setBalance={handleUpdateBalance}
-            onBack={() => setActiveTab("menu")}
-            userId={user.id}
-          />
-        )}
+      {screen === "menu" && (
+        <MenuScreen
+          onPlay={() => setScreen("game")}
+          onProfile={() => setScreen("profile")}
+          balance={balance}
+        />
+      )}
+      {screen === "profile" && (
+        <ProfileScreen
+          user={user}
+          balance={balance}
+          onMenu={() => setScreen("menu")}
+        />
+      )}
+      {screen === "game" && (
+        <GameScreen
+          onBack={() => setScreen("menu")}
+          balance={balance}
+          setBalance={handleBalanceChange}
+        />
+      )}
+      {/* Нижняя навигация */}
+      <div className="bottom-nav">
+        <button className="nav-btn" onClick={() => setScreen("menu")}>
+          Меню
+        </button>
+        <button className="nav-btn" onClick={() => setScreen("profile")}>
+          Профиль
+        </button>
       </div>
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
