@@ -4,75 +4,70 @@ import ProfileScreen from "./ProfileScreen";
 import GameScreen from "./GameScreen";
 import { fetchBalance, updateBalance } from "./api";
 
-function getTelegramUser() {
-  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe.user) {
-    return window.Telegram.WebApp.initDataUnsafe.user;
-  }
-  // Заглушка для разработки в браузере
-  return {
-    id: 123456,
-    first_name: "Тестовый",
-    last_name: "Пользователь",
-    username: "testuser",
-    photo_url: "https://i.ibb.co/B4WtTRb/avatar.jpg",
-  };
-}
-
-export default function App() {
-  const [screen, setScreen] = useState("menu");
+function App() {
   const [user, setUser] = useState(null);
   const [balance, setBalance] = useState(null);
+  const [screen, setScreen] = useState("menu");
 
+  // Получаем данные пользователя из Telegram Mini App
   useEffect(() => {
-    const tgUser = getTelegramUser();
-    setUser(tgUser);
-
-    // Баланс по user.id или user.id || 'user_1'
-    fetchBalance(tgUser.id || "user_1").then((data) => {
-      setBalance(data.balance);
-    });
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+      setUser(window.Telegram.WebApp.initDataUnsafe.user);
+    }
   }, []);
 
-  // При обновлении баланса
-  const handleBalanceChange = (newBalance) => {
+  // Загружаем баланс, когда user готов
+  useEffect(() => {
+    if (user && user.id) {
+      fetchBalance(user.id)
+        .then(res => setBalance(res.balance))
+        .catch(() => setBalance(1000)); // если ошибка, базовый баланс
+    }
+  }, [user]);
+
+  // Функция для обновления баланса на сервере и локально
+  const handleSetBalance = async (newBalance) => {
     setBalance(newBalance);
-    if (user?.id) {
-      updateBalance(user.id, newBalance);
+    if (user && user.id) {
+      try {
+        await updateBalance(user.id, newBalance);
+      } catch (e) { /* обработка ошибок */ }
     }
   };
+
+  if (!user || balance === null) return <div>Загрузка...</div>;
 
   return (
     <div className="app-root">
       {screen === "menu" && (
         <MenuScreen
           onPlay={() => setScreen("game")}
-          onProfile={() => setScreen("profile")}
           balance={balance}
+          onProfile={() => setScreen("profile")}
         />
       )}
       {screen === "profile" && (
         <ProfileScreen
           user={user}
           balance={balance}
-          onMenu={() => setScreen("menu")}
+          onBack={() => setScreen("menu")}
         />
       )}
       {screen === "game" && (
         <GameScreen
           onBack={() => setScreen("menu")}
           balance={balance}
-          setBalance={handleBalanceChange}
+          setBalance={handleSetBalance}
+          userId={user.id}
         />
       )}
-      {/* Нижняя навигация */}
+      {/* Навигация */}
       <div className="bottom-nav">
-        <button className="nav-btn" onClick={() => setScreen("menu")}>
-          Меню
-        </button>
-        <button className="nav-btn" onClick={() => setScreen("profile")}>
-          Профиль
-        </button>
+        <button className="nav-btn" onClick={() => setScreen("menu")}>Меню</button>
+        <button className="nav-btn" onClick={() => setScreen("profile")}>Профиль</button>
       </div>
     </div>
   );
 }
+
+export default App;
