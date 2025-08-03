@@ -1,73 +1,79 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import MenuScreen from "./MenuScreen";
 import ProfileScreen from "./ProfileScreen";
 import GameScreen from "./GameScreen";
 import { fetchBalance, updateBalance } from "./api";
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [balance, setBalance] = useState(null);
+export default function App() {
+  // Получаем данные Telegram
+  const tg = window.Telegram?.WebApp;
+  const userId = tg?.initDataUnsafe?.user?.id?.toString() || "test_user";
+  const username = tg?.initDataUnsafe?.user?.username || "testuser";
+  const name = tg?.initDataUnsafe?.user?.first_name
+    ? `${tg.initDataUnsafe.user.first_name} ${tg.initDataUnsafe.user.last_name || ""}`.trim()
+    : "Тестовый Пользователь";
+  const photo = tg?.initDataUnsafe?.user?.photo_url || "https://i.ibb.co/4Kp7rG6/user-placeholder.png";
+
   const [screen, setScreen] = useState("menu");
+  const [balance, setBalance] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Получаем данные пользователя из Telegram Mini App
+  // Загрузка баланса при входе
   useEffect(() => {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-      setUser(window.Telegram.WebApp.initDataUnsafe.user);
-    }
-  }, []);
+    fetchBalance(userId)
+      .then((data) => setBalance(data.balance))
+      .catch(() => setBalance(1000))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line
+  }, [userId]);
 
-  // Загружаем баланс, когда user готов
-  useEffect(() => {
-    if (user && user.id) {
-      fetchBalance(user.id)
-        .then(res => setBalance(res.balance))
-        .catch(() => setBalance(1000)); // если ошибка, базовый баланс
-    }
-  }, [user]);
-
-  // Функция для обновления баланса на сервере и локально
-  const handleSetBalance = async (newBalance) => {
+  // Обновление баланса на сервере
+  const updateBalanceOnServer = (newBalance) => {
     setBalance(newBalance);
-    if (user && user.id) {
-      try {
-        await updateBalance(user.id, newBalance);
-      } catch (e) { /* обработка ошибок */ }
-    }
+    updateBalance(userId, newBalance).catch(() => {});
   };
 
-  if (!user || balance === null) return <div>Загрузка...</div>;
+  if (loading) return <div style={{ padding: 24 }}>Загрузка...</div>;
 
   return (
     <div className="app-root">
       {screen === "menu" && (
         <MenuScreen
-          onPlay={() => setScreen("game")}
           balance={balance}
+          onPlay={() => setScreen("game")}
           onProfile={() => setScreen("profile")}
         />
       )}
       {screen === "profile" && (
         <ProfileScreen
-          user={user}
           balance={balance}
+          name={name}
+          username={username}
+          photo={photo}
           onBack={() => setScreen("menu")}
         />
       )}
       {screen === "game" && (
         <GameScreen
-          onBack={() => setScreen("menu")}
           balance={balance}
-          setBalance={handleSetBalance}
-          userId={user.id}
+          setBalance={updateBalanceOnServer}
+          onBack={() => setScreen("menu")}
         />
       )}
-      {/* Навигация */}
       <div className="bottom-nav">
-        <button className="nav-btn" onClick={() => setScreen("menu")}>Меню</button>
-        <button className="nav-btn" onClick={() => setScreen("profile")}>Профиль</button>
+        <button
+          className={`nav-btn${screen === "menu" ? " nav-active" : ""}`}
+          onClick={() => setScreen("menu")}
+        >
+          Меню
+        </button>
+        <button
+          className={`nav-btn${screen === "profile" ? " nav-active" : ""}`}
+          onClick={() => setScreen("profile")}
+        >
+          Профиль
+        </button>
       </div>
     </div>
   );
 }
-
-export default App;

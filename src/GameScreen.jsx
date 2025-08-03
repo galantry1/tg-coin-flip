@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { updateBalance } from "./api";
 
 const bets = [5, 10, 25, 50, 100, 500];
 const choices = ["Орел", "Решка", "Ребро"];
@@ -21,7 +20,7 @@ function getResult(user, opponent) {
   return "Ты проиграл!";
 }
 
-export default function GameScreen({ onBack, balance, setBalance, userId }) {
+export default function GameScreen({ onBack, balance, setBalance }) {
   const [step, setStep] = useState(0);
   const [selectedBet, setSelectedBet] = useState(null);
   const [timer, setTimer] = useState(10);
@@ -33,11 +32,7 @@ export default function GameScreen({ onBack, balance, setBalance, userId }) {
   // Списываем ставку только один раз
   useEffect(() => {
     if (step === 1 && selectedBet && !hasBetApplied) {
-      setBalance((prev) => {
-        const newBalance = prev - selectedBet;
-        updateBalance(userId, newBalance);
-        return newBalance;
-      });
+      setBalance(balance - selectedBet);
       setHasBetApplied(true);
     }
     // eslint-disable-next-line
@@ -67,17 +62,15 @@ export default function GameScreen({ onBack, balance, setBalance, userId }) {
 
         // Обновим баланс по результату
         setBalance((prev) => {
-          let newBalance = prev;
-          if (res.includes("выиграл")) newBalance = prev + selectedBet * 2;
-          if (res.includes("Ничья")) newBalance = prev + selectedBet;
-          updateBalance(userId, newBalance);
-          return newBalance;
+          if (res.includes("выиграл")) return prev + selectedBet * 2;
+          if (res.includes("Ничья")) return prev + selectedBet;
+          return prev;
         });
 
         setStep(2);
       }, 800);
     }
-  }, [userChoice, step, selectedBet, setBalance, userId]);
+  }, [userChoice, step, selectedBet, setBalance]);
 
   // Новый способ — сбрасываем все состояния, включая hasBetApplied
   function resetGame() {

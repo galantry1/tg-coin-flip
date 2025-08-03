@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function MenuScreen({ onPlay, onProfile, balance }) {
+export default function MenuScreen({ balance, onPlay, onProfile }) {
   return (
     <div>
       <div className="menu-header">
@@ -9,9 +9,7 @@ export default function MenuScreen({ onPlay, onProfile, balance }) {
       </div>
       <div className="menu-actions">
         <button className="main-btn" onClick={onPlay}>Играть</button>
-        <button className="secondary-btn" disabled>
-          Играть с другом
-        </button>
+        <button className="secondary-btn" disabled>Играть с другом</button>
       </div>
       <div className="menu-tip">
         <span>В будущем тут будет ещё больше фишек 😉</span>
